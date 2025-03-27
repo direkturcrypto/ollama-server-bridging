@@ -85,13 +85,65 @@ function getModel(req, res) {
 }
 
 /**
+ * Parse request body if it's a string (from curl requests)
+ * @param {*} body - Request body
+ * @returns {Object} - Parsed body
+ */
+function parseBodyIfString(body) {
+  if (typeof body === 'string' || body instanceof String) {
+    try {
+      return JSON.parse(body);
+    } catch (parseError) {
+      console.error('Failed to parse string body as JSON:', parseError.message);
+      return body;
+    }
+  }
+  return body;
+}
+
+/**
  * Handler for POST /v1/embeddings endpoint
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
 async function embeddings(req, res) {
   try {
-    const { model, input, ...otherParams } = req.body;
+    // Log the request for debugging
+    console.log('OpenAI Embeddings Request Body:', req.body);
+    console.log('Content-Type:', req.headers['content-type']);
+    
+    // Parse body if it's a string
+    const body = parseBodyIfString(req.body);
+    
+    // Extract parameters from the request
+    // Handle both JSON and form-data formats
+    const model = body.model;
+    const input = body.input;
+    
+    // Validate required parameters
+    if (!model) {
+      return res.status(400).json({ 
+        error: { 
+          message: 'Missing required parameter: "model"',
+          type: 'invalid_request_error'
+        }
+      });
+    }
+    
+    if (!input) {
+      return res.status(400).json({ 
+        error: { 
+          message: 'Missing required parameter: "input"',
+          type: 'invalid_request_error'
+        }
+      });
+    }
+    
+    console.log('Using model:', model);
+    console.log('Input to embed:', input);
+    
+    // Remove model and input from otherParams
+    const { model: _, input: __, ...otherParams } = body;
     
     const response = await makeEmbeddingsRequest(model, input, otherParams);
     
@@ -116,7 +168,42 @@ async function embeddings(req, res) {
  */
 async function embed(req, res) {
   try {
-    const { model, input, ...otherParams } = req.body;
+    // Log the request for debugging
+    console.log('OpenAI Embed Request Body:', req.body);
+    console.log('Content-Type:', req.headers['content-type']);
+    
+    // Parse body if it's a string
+    const body = parseBodyIfString(req.body);
+    
+    // Extract parameters from the request
+    // Handle both JSON and form-data formats
+    const model = body.model;
+    const input = body.input;
+    
+    // Validate required parameters
+    if (!model) {
+      return res.status(400).json({ 
+        error: { 
+          message: 'Missing required parameter: "model"',
+          type: 'invalid_request_error'
+        }
+      });
+    }
+    
+    if (!input) {
+      return res.status(400).json({ 
+        error: { 
+          message: 'Missing required parameter: "input"',
+          type: 'invalid_request_error'
+        }
+      });
+    }
+    
+    console.log('Using model:', model);
+    console.log('Input to embed:', input);
+    
+    // Remove model and input from otherParams
+    const { model: _, input: __, ...otherParams } = body;
     
     const response = await makeEmbeddingsRequest(model, input, otherParams);
     

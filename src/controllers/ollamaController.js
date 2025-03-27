@@ -67,9 +67,35 @@ async function generate(req, res) {
  */
 async function embeddings(req, res) {
   try {
-    const { model, prompt, ...otherParams } = req.body;
+    // Special handling for curl requests without Content-Type header
+    let body = req.body;
     
-    const response = await makeEmbeddingsRequest(model, prompt, otherParams);
+    // If the request body is a string (e.g., from curl -d), try to parse it
+    if (typeof body === 'string' || body instanceof String) {
+      try {
+        body = JSON.parse(body);
+        console.log('Parsed string body into JSON:', body);
+      } catch (parseError) {
+        console.error('Failed to parse string body as JSON:', parseError.message);
+      }
+    }
+    
+    const { model, prompt, input, ...otherParams } = body || {};
+    const textToEmbed = input || prompt;
+    
+    if (!model) {
+      return res.status(400).json({ 
+        error: 'Missing required parameter: "model"' 
+      });
+    }
+    
+    if (!textToEmbed) {
+      return res.status(400).json({ 
+        error: 'Missing required parameter: Either "prompt" or "input" must be provided' 
+      });
+    }
+    
+    const response = await makeEmbeddingsRequest(model, textToEmbed, otherParams);
     
     // Transform the intelligence.io response to Ollama format
     const intelligenceResponse = response.data;
@@ -89,10 +115,52 @@ async function embeddings(req, res) {
  */
 async function embed(req, res) {
   try {
-    const { model, prompt, input, ...otherParams } = req.body;
+    // Log the request for debugging
+    console.log('Embed Request Body (raw):', req.body);
+    console.log('Content-Type:', req.headers['content-type']);
     
-    // Use prompt for Ollama API and input for OpenAI API compatibility
+    // If the request body is a string (likely from curl -d without content-type), try to parse it
+    let body = req.body;
+    
+    if (typeof body === 'string' || body instanceof String) {
+      try {
+        body = JSON.parse(body);
+        console.log('Successfully parsed string body into JSON:', body);
+      } catch (parseError) {
+        console.error('Failed to parse body as JSON, will use as-is:', parseError.message);
+        // For simple string bodies, create an object with default parameters
+        if (!body.model && !body.input && !body.prompt) {
+          body = { model: 'hellord/mxbai-embed-large-v1:f16', input: body };
+          console.log('Created default body object:', body);
+        }
+      }
+    }
+    
+    // Extract parameters from the parsed body
+    const model = body.model;
+    const prompt = body.prompt || body.input;
+    const input = body.input || body.prompt;
+    
     const textToEmbed = input || prompt;
+    
+    // Validate required parameters
+    if (!model) {
+      return res.status(400).json({ 
+        error: 'Missing required parameter: "model". Please provide a model parameter in your request.' 
+      });
+    }
+    
+    if (!textToEmbed) {
+      return res.status(400).json({ 
+        error: 'Missing required parameter: Either "prompt" or "input" must be provided' 
+      });
+    }
+    
+    console.log('Using model:', model);
+    console.log('Text to embed:', textToEmbed);
+    
+    // Remove model and input/prompt from otherParams
+    const { model: _, prompt: __, input: ___, ...otherParams } = body;
     
     const response = await makeEmbeddingsRequest(model, textToEmbed, otherParams);
     

@@ -13,49 +13,10 @@ const app = express();
 // CORS middleware
 app.use(cors());
 
-// Parse raw bodies for application/json
-app.use(bodyParser.raw({ 
-  type: 'application/json', 
-  limit: '50mb'
-}));
-
-// Handle raw Buffer for application/json requests
-app.use((req, res, next) => {
-  if (req.headers['content-type'] === 'application/json' && Buffer.isBuffer(req.body)) {
-    try {
-      const jsonString = req.body.toString('utf8');
-      console.log('Received JSON string:', jsonString);
-      req.body = JSON.parse(jsonString);
-      console.log('Parsed JSON object:', req.body);
-    } catch (error) {
-      console.error('Error parsing JSON from buffer:', error.message);
-    }
-  }
-  next();
-});
-
 // Regular body parsers for other content types
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
-// Request logging middleware
-app.use((req, res, next) => {
-  console.log('───────────────────────────────────────');
-  console.log('Request URL:', req.url);
-  console.log('Request Method:', req.method);
-  console.log('Content-Type:', req.headers['content-type']);
-  console.log('Request Body (processed):', JSON.stringify(req.body, null, 2));
-  next();
-});
-
-// Body parser error handling
-app.use((err, req, res, next) => {
-  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-    console.error('Bad JSON:', err.message);
-    return res.status(400).json({ error: 'Invalid JSON in request body' });
-  }
-  next(err);
-});
 
 // Ollama API routes
 app.get('/api/tags', ollamaController.getModels);
