@@ -10,7 +10,7 @@ const { VIKEY_API_URL, VIKEY_API_KEY, GAIA_API_URL, GAIA_API_KEY, EMBEDDING_MODE
  * @returns {Promise<Object>} - API response
  */
 async function makeChatRequest(model, messages, stream = true, otherParams = {}) {
-  return await axios.post(`${VIKEY_API_URL}/chat`, {
+  return await axios.post(`${VIKEY_API_URL}/chat/completions`, {
     model,
     messages,
     stream,
