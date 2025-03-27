@@ -32,9 +32,9 @@ async function makeChatRequest(model, messages, stream = true, otherParams = {})
  * @returns {Promise<Object>} - API response
  */
 async function makeCompletionRequest(model, prompt, stream = true, otherParams = {}) {
-  return await axios.post(`${VIKEY_API_URL}/completions`, {
+  return await axios.post(`${VIKEY_API_URL}/chat/completions`, {
     model,
-    prompt,
+    messages: [{ role: 'user', content: prompt }],
     stream,
     ...otherParams
   }, {
