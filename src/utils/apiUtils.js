@@ -18,6 +18,7 @@ async function makeChatRequest(model, messages, stream = true, otherParams = {})
   }, {
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${VIKEY_API_KEY}`,
     },
     responseType: stream ? 'stream' : 'json'
   });
