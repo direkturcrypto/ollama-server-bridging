@@ -62,12 +62,13 @@ async function generate(req, res) {
     } else {
       // For non-streaming, transform the response to match Ollama format
       const vikeyResponse = response.data;
+      console.log(vikeyResponse)
       
       // Create a response in the specified format
       const ollamaResponse = {
         model: model,
         created_at: new Date().toISOString(),
-        response: vikeyResponse.choices[0].text,
+        response: vikeyResponse.choices[0].message.content,
         done: true,
         done_reason: "stop",
         context: generateRandomContext(500), // Generate fake context tokens

@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { VIKEY_API_URL, INTELLIGENCE_API_URL, INTELLIGENCE_API_KEY, EMBEDDING_MODEL_MAP } = require('../config/config');
+const { VIKEY_API_URL, VIKEY_API_KEY, GAIA_API_URL, GAIA_API_KEY, EMBEDDING_MODEL_MAP } = require('../config/config');
 
 /**
  * Makes a chat completion request to vikey.ai
@@ -32,16 +32,25 @@ async function makeChatRequest(model, messages, stream = true, otherParams = {})
  * @returns {Promise<Object>} - API response
  */
 async function makeCompletionRequest(model, prompt, stream = true, otherParams = {}) {
-  return await axios.post(`${VIKEY_API_URL}/chat/completions`, {
+  const payload = {
     model,
     messages: [{ role: 'user', content: prompt }],
     stream,
     ...otherParams
-  }, {
+  }
+  console.log('Payload:', payload);
+  return await axios.post(`${VIKEY_API_URL}/chat/completions`, payload, {
     headers: {
+      'Authorization': `Bearer ${VIKEY_API_KEY}`,
       'Content-Type': 'application/json',
     },
     responseType: stream ? 'stream' : 'json'
+  }).then(response => {
+    // console.log('Response:', response);
+    return response;
+  }).catch(error => {
+    console.error('Error:', error.response.data);
+    throw error;
   });
 }
 
@@ -73,10 +82,10 @@ async function makeEmbeddingsRequest(model, input, otherParams = {}) {
     console.log('Payload for embedding request:', JSON.stringify(payload, null, 2));
     
     // Make the request
-    const response = await axios.post(`${INTELLIGENCE_API_URL}/embeddings`, payload, {
+    const response = await axios.post(`${GAIA_API_URL}/embeddings`, payload, {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${INTELLIGENCE_API_KEY}`
+        'Authorization': `Bearer ${GAIA_API_KEY}`
       }
     });
     
