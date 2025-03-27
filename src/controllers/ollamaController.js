@@ -61,27 +61,73 @@ async function generate(req, res) {
 }
 
 /**
+ * Parse raw request data when content-type is missing
+ * @param {Object} req - Express request object
+ * @returns {Object} - Parsed body
+ */
+function parseRequestBody(req) {
+  console.log('Headers:', req.headers);
+  console.log('Raw body:', req.body);
+  
+  let body = req.body;
+  
+  // If the body is a string (text/plain or no content-type), try to parse it as JSON
+  if (typeof body === 'string' || body instanceof String) {
+    try {
+      body = JSON.parse(body);
+      console.log('Successfully parsed string body as JSON:', body);
+    } catch (parseError) {
+      console.error('Failed to parse string body as JSON:', parseError.message);
+    }
+  }
+  // If the body is a Buffer (raw data), try to parse it
+  else if (Buffer.isBuffer(body)) {
+    try {
+      const jsonString = body.toString('utf8');
+      console.log('Raw buffer data:', jsonString);
+      body = JSON.parse(jsonString);
+      console.log('Successfully parsed buffer data as JSON:', body);
+    } catch (parseError) {
+      console.error('Failed to parse buffer as JSON:', parseError.message);
+    }
+  }
+  // If we have a raw body (no content-type), try to parse it
+  else if (!req.headers['content-type'] && body) {
+    try {
+      // Try to parse as JSON if it's an object
+      if (typeof body === 'object') {
+        console.log('Using object body as-is:', body);
+      }
+      // Default case: if we have raw data but couldn't parse it
+      else {
+        console.log('Could not parse body, using as plain text');
+      }
+    } catch (error) {
+      console.error('Error processing raw body:', error.message);
+    }
+  }
+  
+  return body || {};
+}
+
+/**
  * Handler for POST /api/embeddings endpoint
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
 async function embeddings(req, res) {
   try {
-    // Special handling for curl requests without Content-Type header
-    let body = req.body;
+    // Parse request body regardless of content-type
+    const body = parseRequestBody(req);
     
-    // If the request body is a string (e.g., from curl -d), try to parse it
-    if (typeof body === 'string' || body instanceof String) {
-      try {
-        body = JSON.parse(body);
-        console.log('Parsed string body into JSON:', body);
-      } catch (parseError) {
-        console.error('Failed to parse string body as JSON:', parseError.message);
-      }
-    }
+    // Extract parameters with fallbacks
+    const model = body.model || 'all-minilm';
+    const prompt = body.prompt || body.input;
+    const input = body.input || body.prompt;
+    const textToEmbed = input || prompt || '';
     
-    const { model, prompt, input, ...otherParams } = body || {};
-    const textToEmbed = input || prompt;
+    console.log('Extracted model:', model);
+    console.log('Extracted text to embed:', textToEmbed);
     
     if (!model) {
       return res.status(400).json({ 
@@ -94,6 +140,9 @@ async function embeddings(req, res) {
         error: 'Missing required parameter: Either "prompt" or "input" must be provided' 
       });
     }
+    
+    // Remove model and input/prompt from otherParams
+    const { model: _, prompt: __, input: ___, ...otherParams } = body;
     
     const response = await makeEmbeddingsRequest(model, textToEmbed, otherParams);
     
@@ -115,49 +164,32 @@ async function embeddings(req, res) {
  */
 async function embed(req, res) {
   try {
-    // Log the request for debugging
-    console.log('Embed Request Body (raw):', req.body);
+    // Log the request info for debugging
+    console.log('Embed Request URL:', req.url);
+    console.log('Embed Request Method:', req.method);
     console.log('Content-Type:', req.headers['content-type']);
+    console.log('All Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('Raw Body:', req.body);
     
-    // If the request body is a string (likely from curl -d without content-type), try to parse it
-    let body = req.body;
+    // Parse request body regardless of content-type
+    const body = parseRequestBody(req);
     
-    if (typeof body === 'string' || body instanceof String) {
-      try {
-        body = JSON.parse(body);
-        console.log('Successfully parsed string body into JSON:', body);
-      } catch (parseError) {
-        console.error('Failed to parse body as JSON, will use as-is:', parseError.message);
-        // For simple string bodies, create an object with default parameters
-        if (!body.model && !body.input && !body.prompt) {
-          body = { model: 'hellord/mxbai-embed-large-v1:f16', input: body };
-          console.log('Created default body object:', body);
-        }
-      }
-    }
-    
-    // Extract parameters from the parsed body
-    const model = body.model;
+    // Extract parameters with fallbacks
+    const model = body.model || 'all-minilm';
     const prompt = body.prompt || body.input;
     const input = body.input || body.prompt;
+    const textToEmbed = input || prompt || '';
     
-    const textToEmbed = input || prompt;
+    console.log('Parsed request body:', body);
+    console.log('Using model:', model);
+    console.log('Text to embed:', textToEmbed);
     
-    // Validate required parameters
-    if (!model) {
-      return res.status(400).json({ 
-        error: 'Missing required parameter: "model". Please provide a model parameter in your request.' 
-      });
-    }
-    
+    // Validate required parameters (with more forgiving validation)
     if (!textToEmbed) {
       return res.status(400).json({ 
         error: 'Missing required parameter: Either "prompt" or "input" must be provided' 
       });
     }
-    
-    console.log('Using model:', model);
-    console.log('Text to embed:', textToEmbed);
     
     // Remove model and input/prompt from otherParams
     const { model: _, prompt: __, input: ___, ...otherParams } = body;

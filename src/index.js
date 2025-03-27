@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const formData = require('express-form-data');
 const { PORT } = require('./config/config');
 
 // Import controllers
@@ -12,14 +11,57 @@ const openaiController = require('./controllers/openaiController');
 const app = express();
 
 // CORS middleware
-app.use(formData.parse());
 app.use(cors());
 
-// Regular body parsers for other content types
-app.use(bodyParser.text());
+// Raw body middleware for requests with no content-type
+app.use((req, res, next) => {
+  if (!req.headers['content-type']) {
+    let data = '';
+    req.setEncoding('utf8');
+    req.on('data', chunk => {
+      data += chunk;
+    });
+    req.on('end', () => {
+      console.log('Raw data with no content-type:', data);
+      try {
+        req.body = JSON.parse(data);
+        console.log('Successfully parsed as JSON:', req.body);
+      } catch (e) {
+        req.body = data;
+        console.log('Could not parse as JSON, treating as plain text');
+      }
+      next();
+    });
+  } else {
+    next();
+  }
+});
+
+// Parse various content types
 app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.text({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log('────────────────────────────────────');
+  console.log(`${req.method} ${req.url}`);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  
+  // Don't log large bodies like embeddings
+  if (req.url.includes('embed')) {
+    console.log('Body: [embedding request - body not logged]');
+  } else {
+    // Try to stringify the body
+    try {
+      console.log('Body:', JSON.stringify(req.body, null, 2));
+    } catch (e) {
+      console.log('Body: [unable to stringify]');
+      console.log('Body type:', typeof req.body);
+    }
+  }
+  next();
+});
 
 // Ollama API routes
 app.get('/api/tags', ollamaController.getModels);
@@ -47,7 +89,7 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not supported' });
 });
 
-// Start server
+// Start server on PORT
 app.listen(PORT, () => {
   console.log(`Ollama proxy server running on http://localhost:${PORT}`);
-}); 
+});
