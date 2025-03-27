@@ -6,7 +6,8 @@ const SUPPORTED_MODELS = [
   'deepseek-r1:7b',
   'deepseek-r1:8b',
   'deepseek-r1:14b',
-  'qwen2.5:7b-instruct-fp16'
+  'qwen2.5:7b-instruct-fp16',
+  'hellord/mxbai-embed-large-v1:f16'
 ];
 
 module.exports = {

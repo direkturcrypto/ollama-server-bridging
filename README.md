@@ -12,6 +12,7 @@ A proxy server that translates Ollama API requests to vikey.ai API calls. This a
   - deepseek-r1:8b
   - deepseek-r1:14b
   - qwen2.5:7b-instruct-fp16
+  - hellord/mxbai-embed-large-v1:f16
 - OpenAI compatibility layer (supports `/v1/...` endpoints)
 
 ## Supported Endpoints
