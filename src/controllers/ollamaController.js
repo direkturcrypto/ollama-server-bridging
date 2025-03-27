@@ -190,7 +190,7 @@ async function embeddings(req, res) {
     // Transform the intelligence.io response to Ollama format
     const intelligenceResponse = response.data;
     res.json({
-      embedding: intelligenceResponse.data[0].embedding
+      embeddings: [intelligenceResponse.data[0].embedding]
     });
   } catch (error) {
     console.error('Error in embeddings endpoint:', error.message);
@@ -240,7 +240,7 @@ async function embed(req, res) {
     // Transform the intelligence.io response to Ollama format
     const intelligenceResponse = response.data;
     res.json({
-      embedding: intelligenceResponse.data[0].embedding
+      embeddings: [intelligenceResponse.data[0].embedding]
     });
   } catch (error) {
     console.error('Error in embed endpoint:', error.message);
