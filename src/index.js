@@ -18,6 +18,7 @@ app.get('/api/tags', ollamaController.getModels);
 app.post('/api/chat', ollamaController.chat);
 app.post('/api/generate', ollamaController.generate);
 app.post('/api/embeddings', ollamaController.embeddings);
+app.post('/api/embed', ollamaController.embed);
 
 // OpenAI compatibility routes
 app.post('/v1/chat/completions', openaiController.chatCompletions);
@@ -25,6 +26,7 @@ app.post('/v1/completions', openaiController.completions);
 app.get('/v1/models', openaiController.listModels);
 app.get('/v1/models/:model', openaiController.getModel);
 app.post('/v1/embeddings', openaiController.embeddings);
+app.post('/v1/embed', openaiController.embed);
 
 // Version endpoint
 app.get('/api/version', (req, res) => {
@@ -33,6 +35,7 @@ app.get('/api/version', (req, res) => {
 
 // Fallback for unhandled routes
 app.use((req, res) => {
+  console.log('Endpoint not supported', req.url);
   res.status(404).json({ error: 'Endpoint not supported' });
 });
 

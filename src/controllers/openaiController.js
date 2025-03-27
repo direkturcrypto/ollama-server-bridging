@@ -23,7 +23,7 @@ async function chatCompletions(req, res) {
     console.error('Error in chat completions endpoint:', error.message);
     res.status(500).json({ 
       error: { 
-        message: 'Failed to proxy request to vikey.ai', 
+        message: 'Failed to proxy request', 
         type: 'server_error' 
       } 
     });
@@ -52,7 +52,7 @@ async function completions(req, res) {
     console.error('Error in completions endpoint:', error.message);
     res.status(500).json({ 
       error: { 
-        message: 'Failed to proxy request to vikey.ai', 
+        message: 'Failed to proxy request', 
         type: 'server_error' 
       } 
     });
@@ -95,13 +95,39 @@ async function embeddings(req, res) {
     
     const response = await makeEmbeddingsRequest(model, input, otherParams);
     
-    // Just return the vikey response as is since it should already be in OpenAI format
+    // Return the response in OpenAI format
+    // Intelligence.io responses are already compatible with OpenAI format
     res.json(response.data);
   } catch (error) {
     console.error('Error in embeddings endpoint:', error.message);
     res.status(500).json({ 
       error: { 
-        message: 'Failed to proxy request to vikey.ai', 
+        message: 'Failed to proxy request to intelligence.io', 
+        type: 'server_error' 
+      } 
+    });
+  }
+}
+
+/**
+ * Handler for POST /v1/embed endpoint (if needed for compatibility)
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+async function embed(req, res) {
+  try {
+    const { model, input, ...otherParams } = req.body;
+    
+    const response = await makeEmbeddingsRequest(model, input, otherParams);
+    
+    // Return the response in OpenAI format
+    // Intelligence.io responses are already compatible with OpenAI format
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error in embed endpoint:', error.message);
+    res.status(500).json({ 
+      error: { 
+        message: 'Failed to proxy request to intelligence.io', 
         type: 'server_error' 
       } 
     });
@@ -113,5 +139,6 @@ module.exports = {
   completions,
   listModels,
   getModel,
-  embeddings
+  embeddings,
+  embed
 }; 

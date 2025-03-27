@@ -31,7 +31,7 @@ async function chat(req, res) {
     }
   } catch (error) {
     console.error('Error in chat endpoint:', error.message);
-    res.status(500).json({ error: 'Failed to proxy request to vikey.ai', details: error.message });
+    res.status(500).json({ error: 'Failed to proxy request', details: error.message });
   }
 }
 
@@ -56,7 +56,7 @@ async function generate(req, res) {
     }
   } catch (error) {
     console.error('Error in generate endpoint:', error.message);
-    res.status(500).json({ error: 'Failed to proxy request to vikey.ai', details: error.message });
+    res.status(500).json({ error: 'Failed to proxy request', details: error.message });
   }
 }
 
@@ -71,14 +71,39 @@ async function embeddings(req, res) {
     
     const response = await makeEmbeddingsRequest(model, prompt, otherParams);
     
-    // Transform the response to Ollama format
-    const vikeyResponse = response.data;
+    // Transform the intelligence.io response to Ollama format
+    const intelligenceResponse = response.data;
     res.json({
-      embedding: vikeyResponse.data[0].embedding
+      embedding: intelligenceResponse.data[0].embedding
     });
   } catch (error) {
     console.error('Error in embeddings endpoint:', error.message);
-    res.status(500).json({ error: 'Failed to proxy request to vikey.ai', details: error.message });
+    res.status(500).json({ error: 'Failed to proxy request to intelligence.io', details: error.message });
+  }
+}
+
+/**
+ * Handler for POST /api/embed endpoint (new endpoint alias for embeddings)
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+async function embed(req, res) {
+  try {
+    const { model, prompt, input, ...otherParams } = req.body;
+    
+    // Use prompt for Ollama API and input for OpenAI API compatibility
+    const textToEmbed = input || prompt;
+    
+    const response = await makeEmbeddingsRequest(model, textToEmbed, otherParams);
+    
+    // Transform the intelligence.io response to Ollama format
+    const intelligenceResponse = response.data;
+    res.json({
+      embedding: intelligenceResponse.data[0].embedding
+    });
+  } catch (error) {
+    console.error('Error in embed endpoint:', error.message);
+    res.status(500).json({ error: 'Failed to proxy request to intelligence.io', details: error.message });
   }
 }
 
@@ -86,5 +111,6 @@ module.exports = {
   getModels,
   chat,
   generate,
-  embeddings
+  embeddings,
+  embed
 }; 

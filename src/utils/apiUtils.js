@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { VIKEY_API_URL } = require('../config/config');
+const { VIKEY_API_URL, INTELLIGENCE_API_URL, INTELLIGENCE_API_KEY, EMBEDDING_MODEL_MAP } = require('../config/config');
 
 /**
  * Makes a chat completion request to vikey.ai
@@ -32,7 +32,7 @@ async function makeChatRequest(model, messages, stream = true, otherParams = {})
  * @returns {Promise<Object>} - API response
  */
 async function makeCompletionRequest(model, prompt, stream = true, otherParams = {}) {
-  return await axios.post(`${VIKEY_API_URL}/chat/completions`, {
+  return await axios.post(`${VIKEY_API_URL}/completions`, {
     model,
     prompt,
     stream,
@@ -46,20 +46,25 @@ async function makeCompletionRequest(model, prompt, stream = true, otherParams =
 }
 
 /**
- * Makes an embeddings request to vikey.ai
+ * Makes an embeddings request to intelligence.io.solutions
  * @param {string} model - Model name
  * @param {string|Array} input - Input for embedding
  * @param {Object} otherParams - Additional parameters
  * @returns {Promise<Object>} - API response
  */
 async function makeEmbeddingsRequest(model, input, otherParams = {}) {
-  return await axios.post(`${VIKEY_API_URL}/embeddings`, {
-    model,
+  // Map the model name to the corresponding intelligence.io model
+  const mappedModel = EMBEDDING_MODEL_MAP[model] || EMBEDDING_MODEL_MAP['all-minilm'];
+  
+  return await axios.post(`${INTELLIGENCE_API_URL}/embeddings`, {
+    model: mappedModel,
     input,
+    encoding_format: "float",
     ...otherParams
   }, {
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${INTELLIGENCE_API_KEY}`
     }
   });
 }

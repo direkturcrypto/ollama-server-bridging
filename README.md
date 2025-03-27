@@ -5,7 +5,8 @@ A proxy server that translates Ollama API requests to vikey.ai API calls. This a
 ## Features
 
 - Provides Ollama-compatible API endpoints
-- Forwards requests to vikey.ai
+- Forwards requests to vikey.ai for LLM completions
+- Uses intelligence.io.solutions for embeddings
 - Supports the following models:
   - deepseek-r1:1.5b
   - deepseek-r1:7b
@@ -22,6 +23,7 @@ A proxy server that translates Ollama API requests to vikey.ai API calls. This a
 - `/api/chat` - Chat completion
 - `/api/generate` - Text completion
 - `/api/embeddings` - Generate embeddings
+- `/api/embed` - Alternative embeddings endpoint
 - `/api/version` - Get version info
 
 ### OpenAI API (for compatibility)
@@ -30,6 +32,7 @@ A proxy server that translates Ollama API requests to vikey.ai API calls. This a
 - `/v1/models` - List models
 - `/v1/models/:model` - Get model info
 - `/v1/embeddings` - Generate embeddings
+- `/v1/embed` - Alternative embeddings endpoint
 
 ## Installation
 
@@ -44,6 +47,9 @@ npm install
 ### Running the server
 
 ```bash
+# Set environment variable for intelligence.io (required for embeddings)
+export IOINTELLIGENCE_API_KEY=your_api_key_here
+
 # Start the server
 npm start
 
@@ -73,9 +79,20 @@ curl http://localhost:3000/api/chat -d '{
 }'
 ```
 
+#### Generate embeddings
+```bash
+curl http://localhost:3000/api/embed -d '{
+  "model": "hellord/mxbai-embed-large-v1:f16",
+  "prompt": "The food was delicious and the waiter..."
+}'
+```
+
 ## Environment Variables
 
-By default, the server runs on port 3000. You can modify this in the config file at `src/config/config.js`.
+- `PORT`: Port number (default: 3000)
+- `IOINTELLIGENCE_API_KEY`: API key for intelligence.io embedding service
+
+Default configurations can be modified in the config file at `src/config/config.js`.
 
 ## License
 
