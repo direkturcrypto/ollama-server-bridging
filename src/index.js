@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const formData = require('express-form-data');
 const { PORT } = require('./config/config');
 
 // Import controllers
@@ -11,9 +12,11 @@ const openaiController = require('./controllers/openaiController');
 const app = express();
 
 // CORS middleware
+app.use(formData.parse());
 app.use(cors());
 
 // Regular body parsers for other content types
+app.use(bodyParser.text());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 

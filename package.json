@@ -20,7 +20,8 @@
     "axios": "^1.6.7",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "express-form-data": "^2.0.23"
   },
   "devDependencies": {
     "nodemon": "^3.0.3"
