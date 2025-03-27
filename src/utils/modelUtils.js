@@ -73,28 +73,6 @@ function transformChatResponse(model, messages, vikeyResponse) {
 }
 
 /**
- * Transforms response format from vikey.ai to Ollama API format for generate
- * @param {string} model - Model name
- * @param {string} prompt - Text prompt
- * @param {Object} vikeyResponse - Response from vikey.ai
- * @returns {Object} - Ollama API formatted response
- */
-function transformGenerateResponse(model, prompt, vikeyResponse) {
-  return {
-    model,
-    created_at: new Date().toISOString(),
-    response: vikeyResponse.choices[0].text,
-    done: true,
-    total_duration: Math.floor(Math.random() * 5000000000),
-    load_duration: Math.floor(Math.random() * 2000000),
-    prompt_eval_count: prompt.length,
-    prompt_eval_duration: Math.floor(Math.random() * 400000000),
-    eval_count: Math.floor(Math.random() * 300) + 100,
-    eval_duration: Math.floor(Math.random() * 5000000000)
-  };
-}
-
-/**
  * Gets models formatted for the OpenAI API /v1/models endpoint
  * @returns {Object} - Object with data array and object type
  */
@@ -130,7 +108,6 @@ module.exports = {
   createModelObject,
   getModelList,
   transformChatResponse,
-  transformGenerateResponse,
   getOpenAIModelList,
   getOpenAIModel
 }; 

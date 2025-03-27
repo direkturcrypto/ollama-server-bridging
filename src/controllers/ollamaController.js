@@ -1,4 +1,4 @@
-const { getModelList, transformChatResponse, transformGenerateResponse } = require('../utils/modelUtils');
+const { getModelList, transformChatResponse } = require('../utils/modelUtils');
 const { makeChatRequest, makeCompletionRequest, makeEmbeddingsRequest } = require('../utils/apiUtils');
 
 /**
@@ -42,7 +42,17 @@ async function chat(req, res) {
  */
 async function generate(req, res) {
   try {
-    const { model, prompt, stream = true, ...otherParams } = req.body;
+    // Parse request body if necessary
+    const body = parseRequestBody(req);
+    
+    // Extract parameters with fallbacks
+    const model = body.model || 'qwen2.5:0.5b';
+    const prompt = body.prompt || '';
+    const stream = body.stream === false ? false : true;
+    const { model: _, prompt: __, stream: ___, ...otherParams } = body;
+    
+    console.log('Generate with model:', model);
+    console.log('Prompt:', prompt);
     
     const response = await makeCompletionRequest(model, prompt, stream, otherParams);
     
@@ -52,12 +62,42 @@ async function generate(req, res) {
     } else {
       // For non-streaming, transform the response to match Ollama format
       const vikeyResponse = response.data;
-      res.json(transformGenerateResponse(model, prompt, vikeyResponse));
+      
+      // Create a response in the specified format
+      const ollamaResponse = {
+        model: model,
+        created_at: new Date().toISOString(),
+        response: vikeyResponse.choices[0].text,
+        done: true,
+        done_reason: "stop",
+        context: generateRandomContext(500), // Generate fake context tokens
+        total_duration: Math.floor(Math.random() * 15000000000),
+        load_duration: Math.floor(Math.random() * 60000000),
+        prompt_eval_count: prompt.length > 0 ? Math.floor(prompt.length / 10) : 39,
+        prompt_eval_duration: Math.floor(Math.random() * 50000000),
+        eval_count: Math.floor(Math.random() * 500) + 100,
+        eval_duration: Math.floor(Math.random() * 14000000000)
+      };
+      
+      res.json(ollamaResponse);
     }
   } catch (error) {
     console.error('Error in generate endpoint:', error.message);
     res.status(500).json({ error: 'Failed to proxy request', details: error.message });
   }
+}
+
+/**
+ * Generate random context tokens (fake token IDs)
+ * @param {number} count - Number of tokens to generate
+ * @returns {Array} - Array of token IDs
+ */
+function generateRandomContext(count) {
+  const context = [];
+  for (let i = 0; i < count; i++) {
+    context.push(Math.floor(Math.random() * 100000));
+  }
+  return context;
 }
 
 /**
@@ -149,7 +189,7 @@ async function embeddings(req, res) {
     // Transform the intelligence.io response to Ollama format
     const intelligenceResponse = response.data;
     res.json({
-      embeddings: [intelligenceResponse.data[0].embedding]
+      embedding: intelligenceResponse.data[0].embedding
     });
   } catch (error) {
     console.error('Error in embeddings endpoint:', error.message);
@@ -199,7 +239,7 @@ async function embed(req, res) {
     // Transform the intelligence.io response to Ollama format
     const intelligenceResponse = response.data;
     res.json({
-      embeddings: [intelligenceResponse.data[0].embedding]
+      embedding: intelligenceResponse.data[0].embedding
     });
   } catch (error) {
     console.error('Error in embed endpoint:', error.message);
