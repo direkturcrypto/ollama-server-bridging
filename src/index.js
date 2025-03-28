@@ -43,25 +43,28 @@ app.use(bodyParser.text({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
 // Request logging middleware
-app.use((req, res, next) => {
-  console.log('────────────────────────────────────');
-  console.log(`${req.method} ${req.url}`);
-  console.log('Headers:', JSON.stringify(req.headers, null, 2));
-  
-  // Don't log large bodies like embeddings
-  if (req.url.includes('embed')) {
-    console.log('Body: [embedding request - body not logged]');
-  } else {
-    // Try to stringify the body
-    try {
-      console.log('Body:', JSON.stringify(req.body, null, 2));
-    } catch (e) {
-      console.log('Body: [unable to stringify]');
-      console.log('Body type:', typeof req.body);
-    }
-  }
-  next();
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+      console.log('────────────────────────────────────');
+      console.log(`${req.method} ${req.url}`);
+      console.log('Headers:', JSON.stringify(req.headers, null, 2));
+    
+      // Don't log large bodies like embeddings
+      if (req.url.includes('embed')) {
+        console.log('Body: [embedding request - body not logged]');
+      } else {
+        // Try to stringify the body
+        try {
+          console.log('Body:', JSON.stringify(req.body, null, 2));
+        } catch (e) {
+          console.log('Body: [unable to stringify]');
+          console.log('Body type:', typeof req.body);
+        }
+      }
+
+      next();
+  });
+}
 
 // Ollama API routes
 app.get('/api/tags', ollamaController.getModels);
