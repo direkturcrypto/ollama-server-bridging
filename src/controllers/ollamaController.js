@@ -27,6 +27,7 @@ async function chat(req, res) {
     } else {
       // For non-streaming, transform the response to match Ollama format
       const vikeyResponse = response.data;
+      vikeyResponse.model = model;
       res.json(transformChatResponse(model, messages, vikeyResponse));
     }
   } catch (error) {

@@ -10,13 +10,14 @@ async function chatCompletions(req, res) {
   try {
     const { model, messages, stream = false, ...otherParams } = req.body;
     
-    const response = await makeChatRequest(model, messages, stream, otherParams);
+    const response = await makeChatRequest("llama-3.1-8b-instruct", messages, stream, otherParams);
     
     if (stream) {
       // For streaming response, pipe the response stream directly
       response.data.pipe(res);
     } else {
       // Just return the vikey response as is since it should already be in OpenAI format
+      response.data.model = model;
       res.json(response.data);
     }
   } catch (error) {
@@ -39,13 +40,14 @@ async function completions(req, res) {
   try {
     const { model, prompt, stream = false, ...otherParams } = req.body;
     
-    const response = await makeCompletionRequest(model, prompt, stream, otherParams);
+    const response = await makeCompletionRequest("llama-3.1-8b-instruct", prompt, stream, otherParams);
     
     if (stream) {
       // For streaming response, pipe the response stream directly
       response.data.pipe(res);
     } else {
       // Just return the vikey response as is since it should already be in OpenAI format
+      response.data.model = model;
       res.json(response.data);
     }
   } catch (error) {

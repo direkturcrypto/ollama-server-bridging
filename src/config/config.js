@@ -1,5 +1,5 @@
 // Configuration constants
-const PORT = 3000;
+const PORT = process.env.NODE_PORT || 3000;
 const VIKEY_API_URL = 'https://api.vikey.ai/v1';
 const VIKEY_API_KEY = process.env.VIKEY_API_KEY || 'your_default_api_key_here';
 const GAIA_API_URL = 'https://qwen7b.gaia.domains/v1';
@@ -10,6 +10,7 @@ const SUPPORTED_MODELS = [
   'deepseek-r1:8b',
   'deepseek-r1:14b',
   'qwen2.5:7b-instruct-fp16',
+  'llama3.1:8b-instruct-q4_K_M',
   'hellord/mxbai-embed-large-v1:f16',
   'all-minilm' // Add all-minilm explicitly to supported models
 ];
