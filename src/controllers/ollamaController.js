@@ -19,7 +19,7 @@ async function chat(req, res) {
   try {
     const { model, messages, stream = true, ...otherParams } = req.body;
     
-    const response = await makeChatRequest(model, messages, stream, otherParams);
+    const response = await makeChatRequest("llama-3.1-8b-instruct", messages, stream, otherParams);
     
     if (stream) {
       // For streaming response, pipe the response stream directly
@@ -55,7 +55,7 @@ async function generate(req, res) {
     console.log('Generate with model:', model);
     console.log('Prompt:', prompt);
     
-    const response = await makeCompletionRequest(model, prompt, stream, otherParams);
+    const response = await makeCompletionRequest("llama-3.1-8b-instruct", prompt, stream, otherParams);
     
     if (stream) {
       // For streaming response, pipe the response stream directly
@@ -63,7 +63,6 @@ async function generate(req, res) {
     } else {
       // For non-streaming, transform the response to match Ollama format
       const vikeyResponse = response.data;
-      console.log(vikeyResponse)
       
       // Create a response in the specified format
       const ollamaResponse = {
@@ -85,7 +84,7 @@ async function generate(req, res) {
     }
   } catch (error) {
     console.error('Error in generate endpoint:', error.message);
-    res.status(500).json({ error: 'Failed to proxy request', details: error.message });
+    res.status(500).json({ error: 'Failed request', details: error.message });
   }
 }
 
@@ -195,7 +194,7 @@ async function embeddings(req, res) {
     });
   } catch (error) {
     console.error('Error in embeddings endpoint:', error.message);
-    res.status(500).json({ error: 'Failed to proxy request to intelligence.io', details: error.message });
+    res.status(500).json({ error: 'Failed request', details: error.message });
   }
 }
 
@@ -245,7 +244,7 @@ async function embed(req, res) {
     });
   } catch (error) {
     console.error('Error in embed endpoint:', error.message);
-    res.status(500).json({ error: 'Failed to proxy request to intelligence.io', details: error.message });
+    res.status(500).json({ error: 'Failed request', details: error.message });
   }
 }
 
