@@ -22,8 +22,73 @@ async function chat(req, res) {
     const response = await makeChatRequest("llama-3.1-8b-instruct", messages, stream, otherParams);
     
     if (stream) {
-      // For streaming response, pipe the response stream directly
-      response.data.pipe(res);
+      let buffer = '';
+      
+      response.data.on('data', chunk => {
+        try {
+          // Append the new chunk to our buffer
+          buffer += chunk.toString();
+          
+          // Process any complete messages in the buffer
+          while (true) {
+            const messageEnd = buffer.indexOf('\n');
+            if (messageEnd === -1) break; // No complete message yet
+            
+            const message = buffer.slice(0, messageEnd);
+            buffer = buffer.slice(messageEnd + 1);
+            
+            // Skip empty messages
+            if (!message.trim()) continue;
+            
+            // Remove 'data: ' prefix if present and parse the JSON
+            const jsonStr = message.replace(/^data: /, '');
+            
+            // Skip [DONE] message
+            if (jsonStr.trim() === '[DONE]') continue;
+            
+            const vikeyResponse = JSON.parse(jsonStr);
+            const streamResponse = {
+              model: model || "meta-llama/Meta-Llama-3-8B-Instruct",
+              created_at: new Date().toISOString(),
+              message: {
+                role: "assistant",
+                content: vikeyResponse.choices[0].delta.content || ""
+              },
+              done: false
+            };
+            
+            // Send the JSON response
+            res.header('Content-Type', 'application/json');
+            res.write(JSON.stringify(streamResponse) + '\n');
+          }
+        } catch (error) {
+          console.error('Error processing stream chunk:', error);
+          console.log('Problematic chunk:', chunk.toString());
+        }
+      });
+
+      response.data.on('end', () => {
+        const finalResponse = {
+          model: model || "qwen2.5:0.5b",
+          created_at: new Date().toISOString(),
+          message: {
+            role: "assistant",
+            content: ""
+          },
+          done: true,
+          done_reason: "stop",
+          total_duration: Math.floor(Math.random() * 20000000000),
+          load_duration: Math.floor(Math.random() * 3000000000),
+          prompt_eval_count: Math.floor(Math.random() * 50) + 10,
+          prompt_eval_duration: Math.floor(Math.random() * 500000000),
+          eval_count: Math.floor(Math.random() * 1000) + 100,
+          eval_duration: Math.floor(Math.random() * 17000000000)
+        };
+        
+        // Send the final JSON response
+        res.write(JSON.stringify(finalResponse) + '\n');
+        res.end();
+      });
     } else {
       // For non-streaming, transform the response to match Ollama format
       const vikeyResponse = response.data;

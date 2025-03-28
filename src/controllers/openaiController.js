@@ -13,9 +13,101 @@ async function chatCompletions(req, res) {
     const response = await makeChatRequest("llama-3.1-8b-instruct", messages, stream, otherParams);
     
     if (stream) {
-      // For streaming response, pipe the response stream directly
-      response.data.pipe(res);
+      // Set proper headers for SSE
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      
+      let buffer = '';
+      
+      response.data.on('data', chunk => {
+        try {
+          // Append the new chunk to our buffer
+          buffer += chunk.toString();
+          
+          // Process any complete messages in the buffer
+          while (true) {
+            const messageEnd = buffer.indexOf('\n');
+            if (messageEnd === -1) break; // No complete message yet
+            
+            const message = buffer.slice(0, messageEnd);
+            buffer = buffer.slice(messageEnd + 1);
+            
+            // Skip empty messages
+            if (!message.trim()) continue;
+            
+            // Remove 'data: ' prefix if present and parse the JSON
+            const jsonStr = message.replace(/^data: /, '');
+            
+            // Skip [DONE] message
+            if (jsonStr.trim() === '[DONE]') {
+              res.write('data: [DONE]\n\n');
+              continue;
+            }
+            
+            const vikeyResponse = JSON.parse(jsonStr);
+            const streamResponse = {
+              id: vikeyResponse.id || `chatcmpl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              object: "chat.completion.chunk",
+              created: Math.floor(Date.now() / 1000),
+              model: model || "meta-llama/llama-3.1-8b-instruct/fp-8",
+              choices: [
+                {
+                  index: 0,
+                  delta: {
+                    role: vikeyResponse.choices?.[0]?.delta?.role || null,
+                    content: vikeyResponse.choices?.[0]?.delta?.content || "",
+                    reasoning_content: null,
+                    tool_calls: null
+                  },
+                  logprobs: null,
+                  finish_reason: vikeyResponse.choices?.[0]?.finish_reason || null,
+                  matched_stop: null
+                }
+              ],
+              usage: null
+            };
+            
+            // Send the JSON response in SSE format
+            res.write(`data: ${JSON.stringify(streamResponse)}\n\n`);
+          }
+        } catch (error) {
+          console.error('Error processing stream chunk:', error);
+          console.log('Problematic chunk:', chunk.toString());
+        }
+      });
+
+      response.data.on('end', () => {
+        const finalResponse = {
+          id: `chatcmpl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          object: "chat.completion.chunk",
+          created: Math.floor(Date.now() / 1000),
+          model: model || "meta-llama/llama-3.1-8b-instruct/fp-8",
+          choices: [
+            {
+              index: 0,
+              delta: {
+                role: null,
+                content: "",
+                reasoning_content: null,
+                tool_calls: null
+              },
+              logprobs: null,
+              finish_reason: "stop",
+              matched_stop: 128009
+            }
+          ],
+          usage: null
+        };
+        
+        // Send the final JSON response in SSE format
+        res.write(`data: ${JSON.stringify(finalResponse)}\n\n`);
+        res.write('data: [DONE]\n\n');
+        res.end();
+      });
     } else {
+      // Set content type for non-streaming response
+      res.setHeader('Content-Type', 'application/json');
       // Just return the vikey response as is since it should already be in OpenAI format
       response.data.model = model;
       res.json(response.data);
