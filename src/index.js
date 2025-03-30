@@ -22,13 +22,13 @@ app.use((req, res, next) => {
       data += chunk;
     });
     req.on('end', () => {
-      console.log('Raw data with no content-type:', data);
+      // console.log('Raw data with no content-type:', data);
       try {
         req.body = JSON.parse(data);
-        console.log('Successfully parsed as JSON:', req.body);
+        // console.log('Successfully parsed as JSON:', req.body);
       } catch (e) {
         req.body = data;
-        console.log('Could not parse as JSON, treating as plain text');
+        // console.log('Could not parse as JSON, treating as plain text');
       }
       next();
     });
@@ -67,6 +67,9 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Ollama API routes
+app.get('/', (req, res) => {
+  res.send("Ollama is running")
+});
 app.get('/api/tags', ollamaController.getModels);
 app.post('/api/chat', ollamaController.chat);
 app.post('/api/generate', ollamaController.generate);

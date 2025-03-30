@@ -19,7 +19,7 @@ async function chat(req, res) {
   try {
     const { model, messages, stream = true, ...otherParams } = req.body;
     
-    const response = await makeChatRequest("llama-3.1-8b-instruct", messages, stream, otherParams);
+    const response = await makeChatRequest(process.env.DEFAULT_MODEL || "llama-3.1-8b-instruct", messages, stream, otherParams);
     
     if (stream) {
       let buffer = '';
@@ -120,7 +120,7 @@ async function generate(req, res) {
     console.log('Generate with model:', model);
     console.log('Prompt:', prompt);
     
-    const response = await makeCompletionRequest("llama-3.1-8b-instruct", prompt, stream, otherParams);
+    const response = await makeCompletionRequest(process.env.DEFAULT_MODEL || "llama-3.1-8b-instruct", prompt, stream, otherParams);
     
     if (stream) {
       // For streaming response, pipe the response stream directly

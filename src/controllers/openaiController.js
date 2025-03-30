@@ -10,7 +10,7 @@ async function chatCompletions(req, res) {
   try {
     const { model, messages, stream = false, ...otherParams } = req.body;
     
-    const response = await makeChatRequest("llama-3.1-8b-instruct", messages, stream, otherParams);
+    const response = await makeChatRequest(process.env.DEFAULT_MODEL || "llama-3.1-8b-instruct", messages, stream, otherParams);
     
     if (stream) {
       // Set proper headers for SSE
@@ -132,7 +132,7 @@ async function completions(req, res) {
   try {
     const { model, prompt, stream = false, ...otherParams } = req.body;
     
-    const response = await makeCompletionRequest("llama-3.1-8b-instruct", prompt, stream, otherParams);
+    const response = await makeCompletionRequest(process.env.DEFAULT_MODEL || "llama-3.1-8b-instruct", prompt, stream, otherParams);
     
     if (stream) {
       // For streaming response, pipe the response stream directly
