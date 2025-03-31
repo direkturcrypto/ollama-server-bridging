@@ -14,6 +14,7 @@ async function makeChatRequest(model, messages, stream = true, otherParams = {})
     model,
     messages,
     stream,
+    max_tokens: 3000,
     ...otherParams
   }, {
     headers: {
