@@ -67,9 +67,6 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Ollama API routes
-app.get('/', (req, res) => {
-  res.send("Ollama is running")
-});
 app.get('/api/tags', ollamaController.getModels);
 app.post('/api/chat', ollamaController.chat);
 app.post('/api/generate', ollamaController.generate);
