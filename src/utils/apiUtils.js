@@ -21,7 +21,7 @@ async function makeChatRequest(model, messages, stream = true, otherParams = {})
       'Authorization': `Bearer ${VIKEY_API_KEY}`,
     },
     responseType: stream ? 'stream' : 'json',
-    timeout: stream ? 0 : 30000,
+    timeout: stream ? 0 : 60000,
     maxContentLength: Infinity,
     maxBodyLength: Infinity,
     timeoutErrorMessage: 'Request timed out'
