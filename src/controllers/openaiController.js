@@ -14,6 +14,9 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
  * @param {Object} res - Express response object
  */
 async function chatCompletions(req, res) {
+  let keepAliveInterval;
+  let responseStream;
+  
   try {
     const { model, messages, stream = false, ...otherParams } = req.body;
     
@@ -23,17 +26,38 @@ async function chatCompletions(req, res) {
     while (retryCount < maxRetries) {
       try {
         const response = await makeChatRequest(process.env.DEFAULT_MODEL || "llama-3.1-8b-instruct", messages, stream, otherParams);
+        responseStream = response.data;
         
         if (stream) {
           // Set proper headers for SSE
           res.setHeader('Content-Type', 'text/event-stream');
           res.setHeader('Cache-Control', 'no-cache');
           res.setHeader('Connection', 'keep-alive');
+          res.setHeader('X-Accel-Buffering', 'no');
+          
+          // Handle client disconnect
+          req.on('close', () => {
+            console.log('Client closed connection');
+            if (keepAliveInterval) clearInterval(keepAliveInterval);
+            if (responseStream) responseStream.destroy();
+            if (!res.finished) res.end();
+          });
           
           let buffer = '';
+          let lastDataTime = Date.now();
           
-          response.data.on('data', chunk => {
+          // Set up keep-alive interval
+          keepAliveInterval = setInterval(() => {
+            if (Date.now() - lastDataTime > 30000) {
+              res.write(': keep-alive\n\n');
+              lastDataTime = Date.now();
+            }
+          }, 30000);
+          
+          responseStream.on('data', chunk => {
             try {
+              lastDataTime = Date.now();
+              
               // Append the new chunk to our buffer
               buffer += chunk.toString();
               
@@ -81,7 +105,9 @@ async function chatCompletions(req, res) {
                 };
                 
                 // Send the JSON response in SSE format
-                res.write(`data: ${JSON.stringify(streamResponse)}\n\n`);
+                if (!res.finished) {
+                  res.write(`data: ${JSON.stringify(streamResponse)}\n\n`);
+                }
               }
             } catch (error) {
               console.error('Error processing stream chunk:', error);
@@ -89,7 +115,9 @@ async function chatCompletions(req, res) {
             }
           });
 
-          response.data.on('end', () => {
+          responseStream.on('end', () => {
+            if (keepAliveInterval) clearInterval(keepAliveInterval);
+            
             const finalResponse = {
               id: `chatcmpl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
               object: "chat.completion.chunk",
@@ -113,9 +141,20 @@ async function chatCompletions(req, res) {
             };
             
             // Send the final JSON response in SSE format
-            res.write(`data: ${JSON.stringify(finalResponse)}\n\n`);
-            res.write('data: [DONE]\n\n');
-            res.end();
+            if (!res.finished) {
+              res.write(`data: ${JSON.stringify(finalResponse)}\n\n`);
+              res.write('data: [DONE]\n\n');
+              res.end();
+            }
+          });
+
+          // Handle errors in the stream
+          responseStream.on('error', (error) => {
+            console.error('Stream error:', error);
+            if (keepAliveInterval) clearInterval(keepAliveInterval);
+            if (!res.finished) {
+              res.end();
+            }
           });
         } else {
           // Set content type for non-streaming response
@@ -137,12 +176,16 @@ async function chatCompletions(req, res) {
     }
   } catch (error) {
     console.error('Error in chat completions endpoint:', error.message);
-    res.status(500).json({ 
-      error: { 
-        message: 'Failed to proxy request', 
-        type: 'server_error' 
-      } 
-    });
+    if (keepAliveInterval) clearInterval(keepAliveInterval);
+    if (responseStream) responseStream.destroy();
+    if (!res.finished) {
+      res.status(500).json({ 
+        error: { 
+          message: 'Failed to proxy request', 
+          type: 'server_error' 
+        } 
+      });
+    }
   }
 }
 
