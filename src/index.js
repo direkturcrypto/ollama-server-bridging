@@ -66,6 +66,17 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
+if (process.env.LLAMAEDGE_ENABLED === 'true') {
+  app.get('/config_pub.json', (req, res) => {
+    const config = require('./gaia/config.json');
+    config.address = req.headers.host.split('.')[0];
+    res.json(config);
+  });
+  app.get('/v1/info', (req, res) => {
+    const info = require('./gaia/info.json');
+    res.json(info);
+  });
+}
 // Ollama API routes
 app.get('/api/tags', ollamaController.getModels);
 app.post('/api/chat', ollamaController.chat);
